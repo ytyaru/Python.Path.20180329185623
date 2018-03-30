@@ -327,6 +327,37 @@ class PathTest(unittest.TestCase):
         self.assertEqual(os.path.expanduser('~/'), ~p)
         self.assertEqual(os.path.expandvars('$HOME'), ~Path('$HOME'))
 
+    def test_len(self):
+        p = Path()
+        self.assertEqual(1, len(p))
+        self.assertEqual(2, len(Path('/A/B')))
+        self.assertEqual(4, len(Path('/A/B','C/D')))
+        self.assertEqual(3, len(Path('/A/B','C/D')+'E'))
+
+    def test_iter(self):
+        expecteds = ['A','B','C']
+        p = Path(os.sep + os.sep.join(expecteds))
+        for i, item in enumerate(p):
+            self.assertEqual(expecteds[i], p[i])
+
+    def test_lshift(self):
+        p = Path('/tmp/A/B/C')
+        self.assertEqual('/tmp/A/B', p << 1)
+        self.assertEqual('/tmp/A', p << 2)
+        self.assertEqual('/tmp', p << 3)
+        self.assertEqual('/', p << 4)
+
+        self.assertEqual('/tmp/A/B/C', p << 0)
+        self.assertEqual('/', p << -1)
+
+    def test_parent(self):
+        p = Path('/tmp/A/B/C')
+        self.assertEqual('/tmp/A/B', str(p.Parent))
+        self.assertEqual('/tmp/A', str(p.Parent.Parent))
+        self.assertEqual('/tmp', str(p.Parent.Parent.Parent))
+        self.assertEqual('/', str(p.Parent.Parent.Parent.Parent))
+        self.assertEqual('/', str(p.Parent.Parent.Parent.Parent.Parent))
+
 
 if __name__ == '__main__':
     unittest.main()

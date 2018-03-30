@@ -6,11 +6,23 @@ class Path:
         self.Child = child
         self.IsExpand = is_expand
 
+    def Split(self): return self.Expand(self.FullPath).lstrip(os.sep).split(os.sep)
+    def __contains__(self, item): return str(item) in str(self)
+    def __lshift__(self, other):
+        if 0 < int(other) < len(self):
+            return os.sep + self.Combine(self.Split()[:-1*int(other)])
+        elif int(other) <= 0 == int(other): return str(self)
+        else:
+            if os.name == 'posix': return os.sep
+            else: return os.path.splitdrive(str(self))[0]
+        #else: return os.sep
+    def __len__(self):
+        return len(self.Split())
+    def __iter__(self):
+        for s in self.Split(): yield s
     def __getitem__(self, key):
-        if type(key) == int:
-            split = self.Expand(self.FullPath).lstrip(os.sep).split(os.sep)
-            return split[key]
-        if type(key) == str:
+        if type(key) == int: return self.Split()[key]
+        elif type(key) == str:
             if 'Extension' == key or 'ext' == key: return self.GetExtension(self.FullPath)
             elif 'FileName' == key or 'basename' == key: return self.GetFileName(self.FullPath)
             elif 'FileNameWithoutExtension' == key or 'stem' == key: return self.GetFileNameWithoutExtension(self.FullPath)
@@ -49,6 +61,9 @@ class Path:
     def Child(self, v):
         if not os.path.isabs(os.path.expandvars(os.path.expanduser(v))): self.__child= str(v)
         else: raise ValueError('Childの値にはRootからの相対パスを指定してください。値={}'.format(v))
+    
+    @property
+    def Parent(self): return Path(self.GetDirectoryName(str(self)))
 
     @property
     def IsExpand(self): return self.__is_expand
