@@ -5,6 +5,9 @@ from Path import Path
 import unittest
 
 class PathTest(unittest.TestCase):
+    # ----------------------------
+    # クラスメソッド
+    # ----------------------------
     def test_ChangeExtension(self):
         self.assertEqual('/tmp/a.csv', Path.ChangeExtension('/tmp/a.txt', 'csv'))
     def test_ChangeExtension_MultiDot(self):
@@ -12,9 +15,10 @@ class PathTest(unittest.TestCase):
 
 
     def test_ChangeExtension_NotHasExtension(self):
+        path = '/tmp/a'
         with self.assertRaises(ValueError) as e:
-            Path.ChangeExtension('/tmp/a', 'csv')
-        self.assertEqual('指定されたパスは拡張子を含んでいません。', e.exception.args[0])
+            Path.ChangeExtension(path, 'csv')
+        self.assertEqual('指定されたパスは拡張子を含んでいません。path={}'.format(path), e.exception.args[0])
 
     def test_Combine_str_verlen(self):
         self.assertEqual('/tmp', Path.Combine('/tmp'))
@@ -96,13 +100,133 @@ class PathTest(unittest.TestCase):
         
     def test_RelativeTo(self):
         self.assertEqual('a.txt', Path.RelativeTo('a.txt'))
-        #self.assertEqual(os.path.join(os.path.expanduser('~/'), 'a.txt'), Path.RelativeTo('a.txt'))
         self.assertEqual('A/a.txt', Path.RelativeTo('/tmp/A/a.txt', '/tmp'))
         self.assertEqual('a.txt', Path.RelativeTo('/tmp/A/a.txt', '/tmp/A'))
         self.assertEqual('../A/a.txt', Path.RelativeTo('/tmp/A/a.txt', '/tmp/B'))
+    # ----------------------------
+    # インスタンスメソッド
+    # ----------------------------
+    def test_Root(self):
+        p = Path()
+        self.assertEqual('/', p.Root)
 
-    def __GetPaths(self):
-        return [['/tmp'], ['/tmp', 'A'], ['/tmp', 'A', 'B'], ['/tmp', 'A', 'B.txt']]
+        v = '/tmp'
+        p.Root = v
+        self.assertEqual(v, p.Root)
+        p.Root = pathlib.Path(v)
+        self.assertEqual(v, p.Root)
+
+        p = Path(v)
+        self.assertEqual(v, p.Root)
+        p = Path(root=v)
+        self.assertEqual(v, p.Root)
+
+    def test_Root_NotAbsolute(self):
+        v = 'A'
+        p = Path()
+        with self.assertRaises(ValueError) as e:
+            p.Root = v
+        self.assertEqual('Rootの値には絶対パスを指定してください。値={}'.format(v), e.exception.args[0])
+
+        v = 'B'
+        with self.assertRaises(ValueError) as e:
+            p = Path(v)
+        self.assertEqual('Rootの値には絶対パスを指定してください。値={}'.format(v), e.exception.args[0])
+
+        v = 'C'
+        with self.assertRaises(ValueError) as e:
+            p = Path(root=v)
+        self.assertEqual('Rootの値には絶対パスを指定してください。値={}'.format(v), e.exception.args[0])
+
+    def test_Child(self):
+        v = 'A'
+        p = Path()
+        self.assertEqual('', p.Child)
+        p.Child= v
+        self.assertEqual(v, p.Child)
+        p.Child = pathlib.Path(v)
+        self.assertEqual(v, p.Child)
+
+        p = Path('/', v)
+        self.assertEqual(v, p.Child)
+        p = Path(child=v)
+        self.assertEqual(v, p.Child)
+
+    def test_Child_NotRelative(self):
+        v = '/tmp'
+        p = Path()
+        with self.assertRaises(ValueError) as e:
+            p.Child= v
+        self.assertEqual('Childの値にはRootからの相対パスを指定してください。値={}'.format(v), e.exception.args[0])
+
+        with self.assertRaises(ValueError) as e:
+            p = Path('/', v)
+        self.assertEqual('Childの値にはRootからの相対パスを指定してください。値={}'.format(v), e.exception.args[0])
+
+        with self.assertRaises(ValueError) as e:
+            p = Path(child=v)
+        self.assertEqual('Childの値にはRootからの相対パスを指定してください。値={}'.format(v), e.exception.args[0])
+
+    def test_IsExpand(self):
+        p = Path()
+        self.assertEqual(False, p.IsExpand)
+        p.IsExpand = True
+        self.assertEqual(True, p.IsExpand)
+
+    def test_IsExpand_NotBool(self):
+        v = 'TRUE'
+        p = Path()
+        with self.assertRaises(TypeError) as e:
+            p.IsExpand = v
+        self.assertEqual('IsExpandの値にはbool型の値を渡してください。型={}, 値={}'.format(type(v), v), e.exception.args[0])
+
+        with self.assertRaises(TypeError) as e:
+            p = Path(is_expand=v)
+        self.assertEqual('IsExpandの値にはbool型の値を渡してください。型={}, 値={}'.format(type(v), v), e.exception.args[0])
+
+    def test_FullPath(self):
+        path = '~/A/b.c'
+        p = Path(path)
+        self.assertEqual('~/A/b.c', p.FullPath)
+        p.IsExpand = True
+        self.assertEqual(os.path.expanduser('~/A/b.c'), p.FullPath)
+        p.IsExpand = False
+        self.assertEqual('~/A/b.c', p.FullPath)
+
+        root = '$HOME/A'
+        child = 'b.c'
+        p = Path(root, child)
+        self.assertEqual('$HOME/A/b.c', p.FullPath)
+        p = Path(root, child, True)
+        self.assertEqual(os.path.expandvars('$HOME/A/b.c'), p.FullPath)
+
+        root = '~/A'
+        p = Path(root)
+        self.assertEqual(root, p.FullPath)
+        p = Path(root, is_expand=True)
+        self.assertEqual(os.path.expanduser(root), p.FullPath)
+
+    def test_FullPaths(self):
+        root = '~/root'
+        p = Path(root, is_expand=True)
+        self.assertEqual([os.path.expanduser(os.path.join(root, 'A'))], p.FullPaths('A'))
+        self.assertEqual([os.path.expanduser(os.path.join(root, 'A')), os.path.expanduser(os.path.join(root, 'B'))], p.FullPaths('A','B'))
+
+        children = ['A', 'B']
+        self.assertEqual([os.path.expanduser(os.path.join(root, c)) for c in children], p.FullPaths(children))
+
+        self.assertEqual([os.path.expanduser(os.path.join(root, c)) for c in children], p.FullPaths(*children))
+
+        children = [pathlib.Path('A'), pathlib.Path('B')]
+        self.assertEqual([os.path.expanduser(os.path.join(root, c)) for c in children], p.FullPaths(children))
+
+        self.assertEqual([os.path.expanduser(os.path.join(root, c)) for c in children], p.FullPaths(*children))
+
+    def test_FullPaths_TypeError(self):
+        p = Path()
+        children = ['A', pathlib.Path('B'), ['C'], ('D',), [['E',['F']]]]
+        with self.assertRaises(TypeError) as e:
+            p.FullPaths(children)
 
 
 if __name__ == '__main__':
