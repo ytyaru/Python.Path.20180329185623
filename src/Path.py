@@ -16,35 +16,65 @@ class Path:
             elif 'FileNameWithoutExtension' == key or 'stem' == key: return self.GetFileNameWithoutExtension(self.FullPath)
             elif 'DirectoryName' == key or 'dirname' == key: return self.GetDirectoryName(self.FullPath)
 
+    # this + ?, this / ?  連結する
+    #def __add__(self, other): return self.Join(str(other).strip(os.sep))
+    def __add__(self, other):
+        #return Path(self.Root, self.RelativeTo(self.Join(str(other).strip(os.sep)), self.Root))
+        return Path(self.Join(str(other).strip(os.sep)))
+    def __truediv__(self, other): return self.__add__(other)
+
+    # ? + this, ? / this  連結する
+    def __radd__(self, other): return self.__add__(other)
+    def __rtruediv__(self, other): return self.__add__(other)
+        
+    # += /= 連結する
+    def __iadd__(self, other):
+        self.Root = self.Join(self.Root, str(self.__add__(str(other).strip(os.sep))))
+        return self
+        #full = self.__add__(other)
+        #self.Child = self.RelativeTo(str(full), self.Root)
+        #return self
+
+    def __itruediv__(self, other): return self.__iadd__(other)
+
+    def __str__(self): return self.FullPath
+       
+    # ~ 展開する
+    def __invert__(self): return self.Expand(self.FullPath)
+        
     @property
     def Root(self): return self.__root
     @Root.setter
     def Root(self, v):
         if os.path.isabs(os.path.expandvars(os.path.expanduser(v))): self.__root = str(v)
         else: raise ValueError('Rootの値には絶対パスを指定してください。値={}'.format(v))
+
     @property
     def Child(self): return self.__child
     @Child.setter
     def Child(self, v):
         if not os.path.isabs(os.path.expandvars(os.path.expanduser(v))): self.__child= str(v)
         else: raise ValueError('Childの値にはRootからの相対パスを指定してください。値={}'.format(v))
+
     @property
     def IsExpand(self): return self.__is_expand
     @IsExpand.setter
     def IsExpand(self, v):
         if isinstance(v, bool): self.__is_expand = v
         else: raise TypeError('IsExpandの値にはbool型の値を渡してください。型={}, 値={}'.format(type(v), v))
+
     @property
     def FullPath(self):
         if self.Child is not None and 0 < len(self.Child):
             p = os.path.join(self.Root, self.Child)
         else: p = self.Root
         return self.Expand(p) if self.IsExpand else p
+
     def Join(self, *child_parts):
         if child_parts is None or 0 == len(child_parts): p = os.path.join(self.Root, self.Child)
-        else:
-            p = os.path.join(self.Root, self.__ListToStr(child_parts))
-            return self.Expand(p) if self.IsExpand else p
+        else: p = os.path.join(self.Root, self.__ListToStr(child_parts))
+        return self.Expand(p) if self.IsExpand else p
+
     def FullPaths(self, *children):
         if type(children[0]) == list:
             target = children[0]
@@ -64,9 +94,11 @@ class Path:
                 elif type(t) == list or type(t) == tuple:
                     parts.append(cls.__ListToStr(t))
                 else: raise TypeError('パスにはstr,os.PathLikeか、それらを含んだlist,tupleを使用してください。type={}'.format(type(t)))
+            #return os.path.join(parts[0], *[p.strip(os.sep) for p in parts[1:]])
+            #return os.path.join(*parts).rstrip(os.sep)
             return os.path.join(*parts)
         return target
-
+    
     @classmethod
     def ChangeExtension(cls, path, extension:str):
         base, ext = os.path.splitext(path)
@@ -75,6 +107,7 @@ class Path:
          
     @classmethod
     def Combine(cls, *args): return cls.__ListToStr(args)
+    #def Combine(cls, *args): return cls.__ListToStr(args[0], *[p.strip(os.sep) for p in args[1:]])
 
     @classmethod
     def GetDirectoryName(cls, path): return os.path.dirname(path)

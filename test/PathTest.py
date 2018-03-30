@@ -184,6 +184,16 @@ class PathTest(unittest.TestCase):
             p = Path(is_expand=v)
         self.assertEqual('IsExpandの値にはbool型の値を渡してください。型={}, 値={}'.format(type(v), v), e.exception.args[0])
 
+    def test_Join(self):
+        p = Path()
+        self.assertEqual('/', p.Join())
+        p = Path('/tmp', 'A')
+        self.assertEqual('/tmp/B', p.Join('B'))
+        p = Path('/tmp', 'A')
+        self.assertEqual('/tmp/B/C.d', p.Join('B','C.d'))
+
+
+
     def test_FullPath(self):
         path = '~/A/b.c'
         p = Path(path)
@@ -228,6 +238,10 @@ class PathTest(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             p.FullPaths(children)
 
+    # ----------------------------
+    # 演算子オーバーライド
+    # ----------------------------
+
     def test_getitem_index(self):
         p = Path('/tmp', 'A/B/C.d')
         self.assertEqual('tmp', p[0])
@@ -261,6 +275,52 @@ class PathTest(unittest.TestCase):
         self.assertEqual('/tmp/A/B', p['DirectoryName'])
         self.assertEqual('/tmp/A/B', p['dirname'])
         self.assertEqual(None, p['NotExistKeyword'])
+
+    def test_add(self):
+        p = Path('/tmp', 'A/B')
+        self.assertEqual('/tmp/C.d', str(p + 'C.d'))
+        self.assertEqual('/tmp/C.d', str('C.d' + p))
+        self.assertEqual('/tmp/C.d', str(p / 'C.d'))
+        self.assertEqual('/tmp/C.d', str('C.d' / p))
+
+        self.assertEqual('/tmp/C.d', str(p + '/C.d'))
+        self.assertEqual('/tmp/C.d', str(p + 'C.d/'))
+        self.assertEqual('/tmp/C.d', str(p + '/C.d/'))
+        self.assertEqual('/tmp/C.d', str(p + '//C.d//'))
+
+        self.assertEqual('/tmp/A', str(p + 'A'))
+        self.assertEqual('/tmp/A/B', str(p + 'A' + 'B'))
+        self.assertEqual('/tmp/A/B/C.d', str(p + 'A' + 'B' + '/C.d'))
+        self.assertEqual('/tmp/A/B/C.d', str(p + 'A/B/C.d'))
+        self.assertEqual('/tmp/A', str(p + pathlib.Path('A')))
+        self.assertEqual('/tmp/A/B', str(p + 'A' + pathlib.Path('B')))
+        self.assertEqual('/tmp/A/B', str(p + pathlib.Path('A') + 'B'))
+        self.assertEqual('/tmp/A/B', str(p / 'A' / pathlib.Path('B')))
+        self.assertEqual('/tmp/A/B', str(p / pathlib.Path('A') / 'B'))
+        self.assertEqual('/tmp/A/B', str(p + pathlib.Path('A') / 'B'))
+        self.assertEqual('/tmp/A/B', str(p / pathlib.Path('A') + 'B'))
+        #self.assertEqual('/tmp/A/B/C', str('/tmp' + Path('A') / pathlib.Path('B') + 'C'))
+
+    def test_iadd(self):
+        p = Path()
+        p += 'tmp'
+        self.assertEqual('/tmp', str(p))
+        p += 'A'
+        self.assertEqual('/tmp/A', str(p))
+        p /= 'B.c'
+        self.assertEqual('/tmp/A/B.c', str(p))
+
+        p = Path()
+        p += 'tmp/work/'
+        self.assertEqual('/tmp/work', str(p))
+        p += '/A/'
+        self.assertEqual('/tmp/work/A', str(p))
+        p += 'B/C'
+        self.assertEqual('/tmp/work/A/B/C', str(p))
+        p += pathlib.Path('D')
+        self.assertEqual('/tmp/work/A/B/C/D', str(p))
+        #p += 'E' + pathlib.Path('F')
+        #self.assertEqual('/tmp/work/A/B/C/D/E/F', str(p))
 
 
 if __name__ == '__main__':
