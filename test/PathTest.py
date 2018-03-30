@@ -322,6 +322,11 @@ class PathTest(unittest.TestCase):
         #p += 'E' + pathlib.Path('F')
         #self.assertEqual('/tmp/work/A/B/C/D/E/F', str(p))
 
+    def test_invert(self):
+        p = Path('~/')
+        self.assertEqual(os.path.expanduser('~/'), ~p)
+        self.assertEqual(os.path.expandvars('$HOME'), ~Path('$HOME'))
+
 
 if __name__ == '__main__':
     unittest.main()

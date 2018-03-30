@@ -17,9 +17,7 @@ class Path:
             elif 'DirectoryName' == key or 'dirname' == key: return self.GetDirectoryName(self.FullPath)
 
     # this + ?, this / ?  連結する
-    #def __add__(self, other): return self.Join(str(other).strip(os.sep))
     def __add__(self, other):
-        #return Path(self.Root, self.RelativeTo(self.Join(str(other).strip(os.sep)), self.Root))
         return Path(self.Join(str(other).strip(os.sep)))
     def __truediv__(self, other): return self.__add__(other)
 
@@ -31,17 +29,13 @@ class Path:
     def __iadd__(self, other):
         self.Root = self.Join(self.Root, str(self.__add__(str(other).strip(os.sep))))
         return self
-        #full = self.__add__(other)
-        #self.Child = self.RelativeTo(str(full), self.Root)
-        #return self
-
     def __itruediv__(self, other): return self.__iadd__(other)
-
-    def __str__(self): return self.FullPath
        
     # ~ 展開する
     def __invert__(self): return self.Expand(self.FullPath)
-        
+    
+    def __str__(self): return self.FullPath
+
     @property
     def Root(self): return self.__root
     @Root.setter
@@ -94,8 +88,6 @@ class Path:
                 elif type(t) == list or type(t) == tuple:
                     parts.append(cls.__ListToStr(t))
                 else: raise TypeError('パスにはstr,os.PathLikeか、それらを含んだlist,tupleを使用してください。type={}'.format(type(t)))
-            #return os.path.join(parts[0], *[p.strip(os.sep) for p in parts[1:]])
-            #return os.path.join(*parts).rstrip(os.sep)
             return os.path.join(*parts)
         return target
     
@@ -107,7 +99,6 @@ class Path:
          
     @classmethod
     def Combine(cls, *args): return cls.__ListToStr(args)
-    #def Combine(cls, *args): return cls.__ListToStr(args[0], *[p.strip(os.sep) for p in args[1:]])
 
     @classmethod
     def GetDirectoryName(cls, path): return os.path.dirname(path)
