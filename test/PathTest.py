@@ -228,6 +228,40 @@ class PathTest(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             p.FullPaths(children)
 
+    def test_getitem_index(self):
+        p = Path('/tmp', 'A/B/C.d')
+        self.assertEqual('tmp', p[0])
+        self.assertEqual('A', p[1])
+        self.assertEqual('B', p[2])
+        self.assertEqual('C.d', p[3])
+
+        if os.name == 'posix':
+            import getpass
+            p = Path('~/root', 'A/B/C.d')
+            self.assertEqual('home', p[0])
+            self.assertEqual(getpass.getuser(), p[1])
+            self.assertEqual('root', p[2])
+            self.assertEqual('A', p[3])
+            self.assertEqual('B', p[4])
+            self.assertEqual('C.d', p[5])
+
+    def test_getitem_OutOfIndex(self):
+        p = Path('/tmp', 'C.d')
+        with self.assertRaises(IndexError) as e:
+            p[2]
+
+    def test_getitem_name(self):
+        p = Path('/tmp', 'A/B/C.d')
+        self.assertEqual('.d', p['Extension'])
+        self.assertEqual('.d', p['ext'])
+        self.assertEqual('C.d', p['FileName'])
+        self.assertEqual('C.d', p['basename'])
+        self.assertEqual('C', p['FileNameWithoutExtension'])
+        self.assertEqual('C', p['stem'])
+        self.assertEqual('/tmp/A/B', p['DirectoryName'])
+        self.assertEqual('/tmp/A/B', p['dirname'])
+        self.assertEqual(None, p['NotExistKeyword'])
+
 
 if __name__ == '__main__':
     unittest.main()

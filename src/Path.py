@@ -6,6 +6,16 @@ class Path:
         self.Child = child
         self.IsExpand = is_expand
 
+    def __getitem__(self, key):
+        if type(key) == int:
+            split = self.Expand(self.FullPath).lstrip(os.sep).split(os.sep)
+            return split[key]
+        if type(key) == str:
+            if 'Extension' == key or 'ext' == key: return self.GetExtension(self.FullPath)
+            elif 'FileName' == key or 'basename' == key: return self.GetFileName(self.FullPath)
+            elif 'FileNameWithoutExtension' == key or 'stem' == key: return self.GetFileNameWithoutExtension(self.FullPath)
+            elif 'DirectoryName' == key or 'dirname' == key: return self.GetDirectoryName(self.FullPath)
+
     @property
     def Root(self): return self.__root
     @Root.setter
