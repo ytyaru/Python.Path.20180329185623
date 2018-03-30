@@ -15,22 +15,26 @@ class Path:
     def Root(self, v):
         if isinstance(v, str):
             if os.path.isabs(v): self.__root = v
-            else: raise Exception('Rootの値には絶対パスを指定してください。')
+            else: raise ValueError('Rootの値には絶対パスを指定してください。')
+            #else: raise Exception('Rootの値には絶対パスを指定してください。')
         elif isinstance(v, os.PathLike):
             if v.is_absolute(): self.__root = str(v)
-            else: raise Exception('Rootの値には絶対パスを指定してください。')
+            else: raise ValueError('Rootの値には絶対パスを指定してください。')
+            #else: raise Exception('Rootの値には絶対パスを指定してください。')
     @property
     def Child(self): return self.__child
     @Child.setter
     def Child(self, v):
         if not os.path.isabs(v): self.__child = v
-        else: raise Exception('Childの値にはRootからの相対パスを指定してください。')
+        else: raise ValueError('Childの値にはRootからの相対パスを指定してください。')
+        #else: raise Exception('Childの値にはRootからの相対パスを指定してください。')
     @property
     def IsExpand(self): return self.__is_expand
     @IsExpand.setter
     def IsExpand(self, v):
         if isinstance(v, bool): self.__is_expand = v
-        else: raise Exception('IsExpandの値にはbool型の値を渡してください。')
+        else: raise TypeError('IsExpandの値にはbool型の値を渡してください。')
+        #else: raise Exception('IsExpandの値にはbool型の値を渡してください。')
     @property
     def FullPath(self):
         p = os.path.join(self.Root, self.Child)
@@ -63,7 +67,8 @@ class Path:
 
     # IN :['/A', ['B','C'], [['D',['E']]]]
     # OUT:/A/B/C/D/E
-    def __ListToStr(self, target):
+    @classmethod
+    def __ListToStr(cls, target):
         if type(target) == list or type(target) == tuple:
             parts = []
             for t in target:
@@ -72,9 +77,10 @@ class Path:
                 #elif type(t) == os.PathLike: parts.append(str(t))
                 #elif type(t) == list or type(t) == tuple: return self.__ListToStr(t)
                 elif type(t) == list or type(t) == tuple:
-                    parts.append(self.__ListToStr(t))
+                    parts.append(cls.__ListToStr(t))
                     #parts.append(self.__ListToStr(t))
-                else: raise Exception('パスにはstr,os.PathLikeか、それらを含んだlist,tupleを使用してください。type={}'.format(type(t)))
+                else: raise TypeError('パスにはstr,os.PathLikeか、それらを含んだlist,tupleを使用してください。type={}'.format(type(t)))
+                #else: raise Exception('パスにはstr,os.PathLikeか、それらを含んだlist,tupleを使用してください。type={}'.format(type(t)))
             #print('*', parts, os.path.join(*parts))
             #for i, p in enumerate(parts):
             #    if type(parts[i]) == list or type(parts[i]) == tuple:
@@ -103,11 +109,13 @@ class Path:
     @classmethod
     def ChangeExtension(cls, path, extension:str):
         base, ext = os.path.splitext(path)
-        if 0 == len(ext): raise Exception('指定されたパスは拡張子を含んでいません。')
+        if 0 == len(ext): raise ValueError('指定されたパスは拡張子を含んでいません。')
+        #if 0 == len(ext): raise Exception('指定されたパスは拡張子を含んでいません。')
         return base + '.' + extension
          
     @classmethod
-    def Combine(cls, *args): return os.path.join(*[str(a) for a in args])
+    def Combine(cls, *args): return cls.__ListToStr(args)
+    #def Combine(cls, *args): return os.path.join(*[str(a) for a in args])
 
     @classmethod
     def GetDirectoryName(cls, path): return os.path.dirname(path)
@@ -119,7 +127,8 @@ class Path:
     def GetFileName(cls, path): return os.path.basename(path)
 
     @classmethod
-    def GetFileNameWithoutExtension(cls, path): return os.path.splitext(path)[0]
+    def GetFileNameWithoutExtension(cls, path): return cls.GetFileName(path).replace(cls.GetExtension(path), '')
+    #def GetFileNameWithoutExtension(cls, path): return os.path.splitext(path)[0]
 
     @classmethod
     def GetFullPath(cls, path): return os.path.abspath(path)
